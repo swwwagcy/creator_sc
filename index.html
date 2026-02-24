@@ -82,29 +82,30 @@
             order: -1;
         }
 
-        /* 時間欄位 */
+        /* [修改] 時間欄位縮小，讓位給名字 */
         .time-col { 
             display: flex; 
             flex-direction: column; 
             justify-content: center; 
-            min-width: 48px; 
+            min-width: 48px; /* 縮小寬度 */
             text-align: left; 
             flex-shrink: 0; 
             opacity: 0.9;
         }
         
+        /* [修改] 字體調整 */
         .time-start { 
-            font-size: 16px; 
-            font-weight: 600; 
+            font-size: 16px; /* 從 19px 降為 16px */
+            font-weight: 600; /* 稍微減輕字重 */
             color: var(--text-primary); 
             line-height: 1.1; 
             margin-bottom: 2px; 
         }
         
         .time-end { 
-            font-size: 12px; 
+            font-size: 12px; /* 從 14px 降為 12px */
             font-weight: 500; 
-            color: var(--text-tertiary); 
+            color: var(--text-tertiary); /* 顏色變淡，降低干擾 */
         }
 
         .profile-col { 
@@ -117,7 +118,7 @@
         
         .avatar-container { 
             position: relative; width: 76px; height: 76px; flex-shrink: 0; 
-            display: block; cursor: pointer;
+            display: block; 
             transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         .avatar-container:active { transform: scale(0.94); opacity: 0.9; }
@@ -177,7 +178,6 @@
             width: 100%; text-align: center;
             border: 1px solid rgba(255,255,255,0.05);
             white-space: nowrap;
-            cursor: pointer;
         }
         
         .card.is-first .btn-live {
@@ -242,14 +242,6 @@
             max-width: 500px;
             margin: 0 auto;
         }
-        
-        /* Skeleton Animation */
-        .skeleton {
-            background: rgba(255,255,255,0.1);
-            border-radius: 4px;
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 0.3; } 100% { opacity: 0.6; } }
     </style>
 </head>
 <body>
@@ -303,24 +295,6 @@
         };
 
         let currentLang = 'zh-TW';
-
-        // 核心跳轉邏輯：嘗試跳出 iframe，失敗則開新視窗
-        window.openLink = function(e, url) {
-            e.preventDefault(); // 阻止預設行為
-            
-            try {
-                // 嘗試讓父視窗跳轉
-                if (window.top !== window.self) {
-                    window.top.location.href = url;
-                } else {
-                    window.location.href = url;
-                }
-            } catch (err) {
-                console.warn('Iframe blocked top navigation. Opening in new tab instead.', err);
-                // 如果因為 Cross-Origin 或 Sandbox 被擋住，則開啟新分頁
-                window.open(url, '_blank');
-            }
-        };
 
         function getTaipeiHour() {
             const now = new Date();
@@ -382,8 +356,7 @@
                                 <span class="time-end">${endStr}</span>
                             </div>
                             <div class="profile-col">
-                                <!-- 改為使用 JS openLink -->
-                                <a href="${profileLink}" onclick="openLink(event, '${profileLink}')" class="avatar-container">
+                                <a href="${profileLink}" target="_blank" class="avatar-container">
                                     <img src="${avatarUrl}" class="avatar" loading="lazy" 
                                          onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzMzMyI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgLz48L3N2Zz4='">
                                 </a>
@@ -397,8 +370,7 @@
                                 </div>
                             </div>
                             <div class="action-col">
-                                <!-- 改為使用 JS openLink -->
-                                <a href="${actionLink}" onclick="openLink(event, '${actionLink}')" class="btn-live">${actionText}</a>
+                                <a href="${actionLink}" target="_blank" class="btn-live">${actionText}</a>
                                 ${bio ? `
                                 <button class="bio-toggle" onclick="toggleBio(this)">
                                     <span>${texts.bio}</span>
@@ -430,7 +402,7 @@
         };
 
         async function init() {
-            // Render Skeleton
+            // Render Skeleton (Updated to match smaller time)
             const container = document.getElementById('schedule-container');
             container.innerHTML = '';
             for(let i=0; i<6; i++) {
