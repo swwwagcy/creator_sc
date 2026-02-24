@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>SWAG 直播時刻表</title>
+    <style>
+        /* ==========================================
+           iOS 26 Design System
+           ========================================== */
+        :root {
+            --bg-body: #000000;
+            --bg-card: #1C1C1E;
+            --bg-card-active: #2C2C2E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #98989D; /* 稍微調亮一點點以配合大字體 */
+            --text-tertiary: #636366;
+            --accent-color: #FF2D55;
+            --btn-gradient: linear-gradient(135deg, #FF2D55, #FF375F);
+            --radius-l: 22px; /* 圓角稍微加大 */
+            --card-padding: 18px; /* 內距稍微加大 */
+            --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: var(--font-stack);
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            padding-bottom: 50px;
+        }
+
+        header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; } /* 標題放大 */
+
+        #i18n-controls { display: flex; gap: 4px; background: rgba(118,118,128,0.24); padding: 3px; border-radius: 10px; }
+        .lang-btn {
+            background: transparent; border: none; color: var(--text-secondary);
+            font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 8px; cursor: pointer;
+        }
+        .lang-btn.active { background: #636366; color: white; }
+
+        main { flex: 1; padding: 16px; width: 100%; max-width: 600px; margin: 0 auto; }
+        .schedule-list { display: flex; flex-direction: column; gap: 14px; } /* 卡片間距加大 */
+
+        .divider {
+            display: flex; align-items: center; gap: 12px;
+            margin: 24px 0 12px; color: var(--text-secondary); font-size: 13px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 1.5px;
+        }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.1); }
+
+        /* Card Layout */
+        .card {
+            background-color: var(--bg-card);
+            border-radius: var(--radius-l);
+            padding: var(--card-padding);
+            position: relative; transition: transform 0.2s;
+            display: flex; flex-direction: column; gap: 14px; 
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .card-main {
+            display: flex; align-items: center; gap: 16px; width: 100%;
+        }
+        
+        /* Active Card Style */
+        .card.is-first {
+            background-color: var(--bg-card-active);
+            border: 1px solid rgba(255, 45, 85, 0.4);
+            box-shadow: 0 0 30px rgba(255, 45, 85, 0.18);
+            order: -1;
+        }
+
+        .time-col { display: flex; flex-direction: column; justify-content: center; min-width: 55px; text-align: left; }
+        .time-start { font-size: 19px; font-weight: 700; color: var(--text-primary); line-height: 1.1; margin-bottom: 4px; } /* 字體放大 */
+        .time-end { font-size: 14px; font-weight: 500; color: var(--text-secondary); } /* 字體放大 */
+
+        .profile-col { flex: 1; display: flex; align-items: center; gap: 16px; overflow: hidden; }
+        
+        .avatar-container { 
+            position: relative; width: 76px; height: 76px; flex-shrink: 0; /* 頭像放大至 76px */
+            display: block; 
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .avatar-container:active { transform: scale(0.94); opacity: 0.9; }
+
+        .avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.1); background: #333; }
+        
+        .info-group { display: flex; flex-direction: column; overflow: hidden; min-width: 0; pointer-events: none; justify-content: center;}
+        
+        .display-name { 
+            font-size: 19px; font-weight: 700; color: var(--text-primary); /* 字體放大 */
+            margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+            letter-spacing: -0.3px;
+        }
+        
+        .username {
+            font-size: 14px; color: var(--text-secondary); /* 字體放大 */
+            margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        
+        .live-tag {
+            font-size: 12px; font-weight: 700; color: var(--accent-color); /* 字體放大 */
+            text-transform: uppercase; letter-spacing: 0.5px;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .live-dot { width: 7px; height: 7px; background: var(--accent-color); border-radius: 50%; animation: blink 1.5s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        .action-col { 
+            flex-shrink: 0; display: flex; flex-direction: column; 
+            align-items: flex-end; gap: 12px; min-width: 90px; 
+        }
+        
+        .btn-live {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            font-size: 14px; font-weight: 600; /* 字體放大 */
+            padding: 10px 18px; border-radius: 24px; text-decoration: none; transition: all 0.2s;
+            width: 100%; text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+            white-space: nowrap;
+        }
+        
+        .card.is-first .btn-live {
+            background: var(--btn-gradient); 
+            color: white;
+            font-weight: 700;
+            border: none;
+            box-shadow: 0 4px 14px rgba(255, 45, 85, 0.45);
+        }
+
+        .bio-toggle {
+            background: rgba(255, 255, 255, 0.05); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 14px;
+            padding: 6px 12px; 
+            cursor: pointer;
+            color: var(--text-secondary); 
+            font-size: 12px; font-weight: 500;
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+            transition: all 0.2s;
+            width: fit-content;
+            align-self: flex-end;
+        }
+        .bio-toggle:hover { background: rgba(255, 255, 255, 0.1); color: var(--text-primary); }
+        .bio-toggle svg { transition: transform 0.3s ease; width: 12px; height: 12px; opacity: 0.7;}
+        .bio-toggle.open svg { transform: rotate(180deg); }
+
+        .bio-content {
+            display: none;
+            font-size: 14px; line-height: 1.6; color: var(--text-secondary); /* 字體放大 */
+            background: rgba(0,0,0,0.3); padding: 18px; border-radius: 18px;
+            white-space: pre-wrap;
+            margin-top: 6px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .bio-content.show { display: block; animation: slideDown 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        @keyframes slideDown { 
+            from { opacity: 0; transform: translateY(-8px); max-height: 0; } 
+            to { opacity: 1; transform: translateY(0); max-height: 500px; } 
+        }
+
+        .status-note {
+            font-size: 12px; /* 字體放大 */
+            color: rgba(255, 255, 255, 0.6);
+            background: rgba(0, 0, 0, 0.25);
+            padding: 8px 12px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .status-note svg { width: 14px; height: 14px; opacity: 0.7; }
+
+        .skeleton { background: #2C2C2E; border-radius: 8px; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+
+        footer { 
+            text-align: center; 
+            font-size: 12px; /* 字體放大 */
+            color: var(--text-tertiary); 
+            padding: 30px 20px; 
+            line-height: 1.6; 
+            opacity: 0.8;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 id="page-title">每日推薦</h1>
+        <div id="i18n-controls">
+            <button class="lang-btn active" data-lang="zh-TW">繁</button>
+            <button class="lang-btn" data-lang="en">EN</button>
+        </div>
+    </header>
+
+    <main>
+        <div id="schedule-container" class="schedule-list">
+            <!-- Content -->
+        </div>
+    </main>
+
+    <footer>
+        <span id="page-footer">時間為 UTC+8，僅供參考。<br>實際播出視創作者個人狀況而定，本頁面不構成開播保證。</span>
+    </footer>
+
+    <script>
+        const API_URL = 'https://swag-schedule-api-905468082258.asia-east1.run.app/api/schedule_reco';
+
+        const i18n = {
+            'zh-TW': {
+                title: '每日推薦',
+                btn: '前往直播間',
+                btn_profile: '搶先追蹤', // 修改為：搶先追蹤
+                bio: '簡介',
+                live: '表定播出',
+                note: '實際開播時間可能依主播狀況調整',
+                upcoming: '即將播出',
+                tomorrow: '明日預告',
+                footer: '本表時段皆為 UTC+8，僅供參考。<br>實際播出視創作者個人狀況而定，本頁面不構成開播保證。',
+                error: '暫時無法載入'
+            },
+            'en': {
+                title: 'Daily Picks',
+                btn: 'Join Live',
+                btn_profile: 'Follow Now', // 修改為：Follow Now
+                bio: 'Bio',
+                live: 'ON SCHEDULE',
+                note: 'Start time may vary slightly.',
+                upcoming: 'UPCOMING',
+                tomorrow: 'TOMORROW',
+                footer: 'Time is UTC+8 and for reference only.<br>Actual broadcast depends on creator status. No guarantee of schedule.',
+                error: 'Loading failed'
+            }
+        };
+
+        let currentLang = 'zh-TW';
+
+        function getTaipeiHour() {
+            const now = new Date();
+            const utc8 = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Taipei"}));
+            return utc8.getHours();
+        }
+
+        function getStartHour(timeStr) {
+            return parseInt(timeStr.split(':')[0]);
+        }
+
+        function renderData(data) {
+            const container = document.getElementById('schedule-container');
+            container.innerHTML = '';
+            
+            if (!data || data.length === 0) return;
+
+            // Sort Logic
+            const currentHour = getTaipeiHour();
+            let pivotIndex = data.findIndex(item => {
+                const startH = getStartHour(item.schedule_time_range_str);
+                return startH === currentHour;
+            });
+            if (pivotIndex === -1) {
+                pivotIndex = data.findIndex(item => getStartHour(item.schedule_time_range_str) > currentHour);
+            }
+            if (pivotIndex === -1) pivotIndex = 0;
+
+            const sortedData = [...data.slice(pivotIndex), ...data.slice(0, pivotIndex)];
+            const splitIndex = data.length - pivotIndex;
+
+            sortedData.forEach((item, index) => {
+                const rawTime = item.schedule_time_range_str;
+                const [startStr, endPart] = rawTime.split(' - ');
+                const endStr = endPart.split(' ')[0];
+                const avatarUrl = `https://public.swag.live/users/${item.streamer_id}/picture.jpg?size=1024x1024&format=jpg`;
+                
+                const liveLink = `https://swag.live/user/${item.streamer_id}/livestream`;
+                const profileLink = `https://swag.live/user/${item.streamer_id}`;
+                
+                const texts = i18n[currentLang];
+                const isFirst = (index === 0);
+
+                const actionText = isFirst ? texts.btn : texts.btn_profile;
+                const actionLink = isFirst ? liveLink : profileLink;
+
+                const displayName = item.user_display_name || item.username;
+                const displayHandle = `@${item.username}`;
+                const bio = item.user_biography || "";
+
+                if (pivotIndex !== 0 && index === splitIndex) {
+                    container.innerHTML += `<div class="divider">${texts.tomorrow}</div>`;
+                }
+
+                container.innerHTML += `
+                    <div class="card ${isFirst ? 'is-first' : ''}">
+                        <div class="card-main">
+                            <div class="time-col">
+                                <span class="time-start">${startStr}</span>
+                                <span class="time-end">${endStr}</span>
+                            </div>
+                            <div class="profile-col">
+                                <a href="${profileLink}" target="_blank" class="avatar-container">
+                                    <img src="${avatarUrl}" class="avatar" loading="lazy" 
+                                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzMzMyI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgLz48L3N2Zz4='">
+                                </a>
+                                <div class="info-group">
+                                    <div class="display-name">${displayName}</div>
+                                    <div class="username">${displayHandle}</div>
+                                    ${isFirst 
+                                        ? `<div class="live-tag"><div class="live-dot"></div>${texts.live}</div>` 
+                                        : `<div class="live-tag" style="color:var(--text-secondary); font-weight:500;">${texts.upcoming}</div>`
+                                    }
+                                </div>
+                            </div>
+                            <div class="action-col">
+                                <a href="${actionLink}" target="_blank" class="btn-live">${actionText}</a>
+                                ${bio ? `
+                                <button class="bio-toggle" onclick="toggleBio(this)">
+                                    <span>${texts.bio}</span>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                                </button>` : ''}
+                            </div>
+                        </div>
+                        
+                        ${isFirst ? `
+                            <div class="status-note">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                                <span>${texts.note}</span>
+                            </div>
+                        ` : ''}
+
+                        ${bio ? `<div class="bio-content">${bio}</div>` : ''}
+                    </div>
+                `;
+            });
+        }
+
+        window.toggleBio = function(btn) {
+            btn.classList.toggle('open');
+            const card = btn.closest('.card');
+            const content = card.querySelector('.bio-content');
+            if(content) {
+                content.classList.toggle('show');
+            }
+        };
+
+        async function init() {
+            // Render Skeleton (Updated Dimensions)
+            const container = document.getElementById('schedule-container');
+            container.innerHTML = '';
+            for(let i=0; i<6; i++) {
+                container.innerHTML += `
+                    <div class="card">
+                        <div class="card-main">
+                            <div class="time-col" style="width: 55px;">
+                                <div class="skeleton" style="width:45px; height:20px; margin-bottom:4px;"></div>
+                                <div class="skeleton" style="width:35px; height:14px;"></div>
+                            </div>
+                            <div class="profile-col">
+                                <div class="skeleton" style="width:76px; height:76px; border-radius:50%;"></div>
+                                <div class="info-group" style="width:120px;">
+                                    <div class="skeleton" style="width:100px; height:20px; margin-bottom:6px;"></div>
+                                    <div class="skeleton" style="width:60px; height:14px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+
+            try {
+                const res = await fetch(API_URL);
+                const json = await res.json();
+                if(json.status === 'success') {
+                    window.cachedData = json.data;
+                    renderData(json.data);
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                currentLang = e.target.dataset.lang;
+                document.getElementById('page-title').textContent = i18n[currentLang].title;
+                document.getElementById('page-footer').innerHTML = i18n[currentLang].footer;
+                document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b === e.target));
+                if(window.cachedData) renderData(window.cachedData);
+            });
+        });
+
+        init();
+    </script>
+</body>
+</html>
