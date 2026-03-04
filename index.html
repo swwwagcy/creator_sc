@@ -6,7 +6,7 @@
     <title>SWAG 直播時刻表</title>
     <style>
         /* ==========================================
-           iOS 26 Design System
+           iOS 26 Design System - Safari Optimized
            ========================================== */
         :root {
             --bg-body: #000000;
@@ -22,36 +22,66 @@
             --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        /* [優化] 針對 iOS Safari iframe 滾動與縮放優化 */
+        * { 
+            box-sizing: border-box; 
+            margin: 0; padding: 0; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+
+        html {
+            height: -webkit-fill-available;
+        }
 
         body {
             font-family: var(--font-stack);
             background-color: var(--bg-body);
             color: var(--text-primary);
+            /* [優化] 解決 100vh 在行動版 Safari 的高度計算問題 */
             min-height: 100vh;
+            min-height: -webkit-fill-available;
             display: flex; flex-direction: column;
-            padding-bottom: 50px;
+            /* [優化] 底部墊高考慮 iOS 下方安全區域 (Home Indicator) */
+            padding-bottom: calc(50px + env(safe-area-inset-bottom));
+            /* [優化] 確保 iframe 內滾動順暢 */
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         header {
-            position: sticky; top: 0; z-index: 100;
+            /* [優化] Safari 黏性定位前綴 */
+            position: -webkit-sticky;
+            position: sticky; 
+            top: 0; z-index: 100;
             background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            padding: 16px 20px;
+            /* [優化] Safari 模糊濾鏡前綴 */
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            /* [優化] 考慮 iPhone 頂部瀏海區域 */
+            padding: calc(16px + env(safe-area-inset-top)) 20px 16px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             display: flex; justify-content: space-between; align-items: center;
         }
 
         h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
 
-        #i18n-controls { display: flex; gap: 4px; background: rgba(118,118,128,0.24); padding: 3px; border-radius: 10px; }
+        #i18n-controls { 
+            display: flex; gap: 4px; background: rgba(118,118,128,0.24); padding: 3px; border-radius: 10px; 
+        }
         .lang-btn {
             background: transparent; border: none; color: var(--text-secondary);
             font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 8px; cursor: pointer;
+            /* [優化] 防止雙擊縮放延遲 */
+            touch-action: manipulation;
         }
         .lang-btn.active { background: #636366; color: white; }
 
-        main { flex: 1; padding: 16px; width: 100%; max-width: 600px; margin: 0 auto; }
+        main { 
+            flex: 1; padding: 16px; width: 100%; max-width: 600px; margin: 0 auto;
+            /* [優化] 確保內容在左右安全區域內 */
+            padding-left: calc(16px + env(safe-area-inset-left));
+            padding-right: calc(16px + env(safe-area-inset-right));
+        }
         .schedule-list { display: flex; flex-direction: column; gap: 14px; }
 
         .divider {
@@ -82,30 +112,28 @@
             order: -1;
         }
 
-        /* [修改] 時間欄位縮小，讓位給名字 */
         .time-col { 
             display: flex; 
             flex-direction: column; 
             justify-content: center; 
-            min-width: 48px; /* 縮小寬度 */
+            min-width: 48px;
             text-align: left; 
             flex-shrink: 0; 
             opacity: 0.9;
         }
         
-        /* [修改] 字體調整 */
         .time-start { 
-            font-size: 16px; /* 從 19px 降為 16px */
-            font-weight: 600; /* 稍微減輕字重 */
+            font-size: 16px; 
+            font-weight: 600; 
             color: var(--text-primary); 
             line-height: 1.1; 
             margin-bottom: 2px; 
         }
         
         .time-end { 
-            font-size: 12px; /* 從 14px 降為 12px */
+            font-size: 12px; 
             font-weight: 500; 
-            color: var(--text-tertiary); /* 顏色變淡，降低干擾 */
+            color: var(--text-tertiary);
         }
 
         .profile-col { 
@@ -123,7 +151,10 @@
         }
         .avatar-container:active { transform: scale(0.94); opacity: 0.9; }
 
-        .avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.1); background: #333; }
+        .avatar { 
+            width: 100%; height: 100%; border-radius: 50%; object-fit: cover; 
+            border: 2px solid rgba(255, 255, 255, 0.1); background: #333; 
+        }
         
         .info-group { 
             display: flex; 
@@ -161,7 +192,10 @@
             text-transform: uppercase; letter-spacing: 0.5px;
             display: flex; align-items: center; gap: 5px;
         }
-        .live-dot { width: 7px; height: 7px; background: var(--accent-color); border-radius: 50%; animation: blink 1.5s infinite; }
+        .live-dot { 
+            width: 7px; height: 7px; background: var(--accent-color); 
+            border-radius: 50%; animation: blink 1.5s infinite; 
+        }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
         .action-col { 
@@ -178,6 +212,8 @@
             width: 100%; text-align: center;
             border: 1px solid rgba(255,255,255,0.05);
             white-space: nowrap;
+            /* [優化] 防止雙擊縮放延遲 */
+            touch-action: manipulation;
         }
         
         .card.is-first .btn-live {
@@ -200,6 +236,7 @@
             transition: all 0.2s;
             width: fit-content;
             align-self: flex-end;
+            touch-action: manipulation;
         }
         .bio-toggle:hover { background: rgba(255, 255, 255, 0.1); color: var(--text-primary); }
         .bio-toggle svg { transition: transform 0.3s ease; width: 12px; height: 12px; opacity: 0.7;}
@@ -241,6 +278,30 @@
             opacity: 0.8;
             max-width: 500px;
             margin: 0 auto;
+        }
+
+        /* [優化] 骨架屏動畫補齊前綴 */
+        .skeleton {
+            background: #2C2C2E;
+            position: relative;
+            overflow: hidden;
+            border-radius: 4px;
+        }
+        .skeleton::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            -webkit-animation: skeleton-wave 1.5s infinite;
+            animation: skeleton-wave 1.5s infinite;
+        }
+        @-webkit-keyframes skeleton-wave {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        @keyframes skeleton-wave {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
     </style>
 </head>
@@ -402,7 +463,6 @@
         };
 
         async function init() {
-            // Render Skeleton (Updated to match smaller time)
             const container = document.getElementById('schedule-container');
             container.innerHTML = '';
             for(let i=0; i<6; i++) {
@@ -425,14 +485,20 @@
             }
 
             try {
-                const res = await fetch(API_URL);
+                /* [優化] 針對 Safari 有時在 iframe 內 Fetch 掛起的問題，加入超時機制 */
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+                const res = await fetch(API_URL, { signal: controller.signal });
                 const json = await res.json();
+                clearTimeout(timeoutId);
+
                 if(json.status === 'success') {
                     window.cachedData = json.data;
                     renderData(json.data);
                 }
             } catch(e) {
-                console.error(e);
+                console.error('Fetch error:', e);
             }
         }
 
