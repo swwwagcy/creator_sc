@@ -512,6 +512,20 @@
             });
         });
 
+        // [修復] iOS PWA iframe 內 target="_blank" 無法正常外開，改用 postMessage 通知 parent 導航
+        if (window.self !== window.top) {
+            document.addEventListener('click', function(e) {
+                var link = e.target.closest('a[target="_blank"]');
+                if (link) {
+                    e.preventDefault();
+                    window.parent.postMessage({
+                        type: 'PWA_NAVIGATE',
+                        url: link.href
+                    }, '*');
+                }
+            });
+        }
+
         init();
     </script>
 </body>
